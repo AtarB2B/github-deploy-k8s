@@ -1,0 +1,49 @@
+name: Deploy to K8S
+
+description: Deploy to K8S
+
+inputs:
+  ATAR_PROJECT:
+    required: true
+    description: ""
+  ATAR_CREDENTIALS:
+    required: true
+    description: ""
+  IMAGE_NAME:
+    required: true
+    description: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Change Owner of Container Working Directory
+      run: chown -R $(id -u):$(id -g) $PWD
+      shell: bash
+      
+    - name: Checkout Main
+      uses: actions/checkout@v3
+
+    - name: Set Local DataTime
+      run: echo "LOCAL_DATE=$(date +'%Y%m%d-%H%M')" >> $GITHUB_ENV; echo "CURRENT_DATE=$(date +'%Y-%m-%d %H:%M')" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Set Vars
+      run: |
+         echo "app_version=${{github.ref_name}}-${{env.LOCAL_DATE}}" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Check and Set Credentials
+      run: |
+        echo ${{ inputs.ATAR_CREDENTIALS }}|gcloud auth activate-service-account --key-file=-
+      shell: bash
+
+    - name: Configure Docker
+      run: gcloud auth configure-docker gcr.io --quiet
+      shell: bash
+
+    - name: Build, Test and Push Docker image
+      run: |
+        docker build . -t ${{ inputs.IMAGE_NAME }}:${app_version}
+        docker run ${{ inputs.IMAGE_NAME }}:${app_version} sh -c "python --version"
+        docker push ${{ inputs.IMAGE_NAME }}:${app_version}
+      shell: bash
