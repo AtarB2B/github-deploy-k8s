@@ -58,7 +58,7 @@ runs:
       shell: bash
 
     - name: Deploy ATAR_DEV ${{github.event.repository.name}} - ${{env.TAG}}
-      run: ${RETRY} gcloud -q --project=${ATAR_PROJECT_DEV} app deploy app.dev.yaml -v=${{env.TAG}} --no-promote
+      run: ${RETRY} gcloud -q --project=${ATAR_PROJECT_DEV} app deploy app.dev.yaml -v=${{ inputs.IMAGE_NAME }}:${app_version} --promote
       shell: bash
 
     - name: Configure Docker
